@@ -116,14 +116,15 @@ void play(int rows, int cols) {
     char snake[rows][cols];
     int head_x = cols / 2;
     int head_y = rows / 2;
-    int tail_x = cols / 2 + 3;
-    int tail_y = rows / 2;
     char escseq[10] = {0};
     int escseq_len;
     char dir = 4;
-    int alive = 1;
     char tail_dir = 'U';
-    int tail = 1;
+    int tail_x = cols / 2 + 3;
+    int tail_y = rows / 2;
+    int apple_x = 2 + (rand() % (cols - 2));
+    int apple_y = 2 + (rand() % (rows - 2));
+    int eatcount = 0;
 
     memset(snake, 0, sizeof(snake));
     memset(board, ' ', sizeof(board));
@@ -142,6 +143,22 @@ void play(int rows, int cols) {
         dir = read_key(dir);
         snake[head_y][head_x] = dir;
 
+        if (apple_x == head_x && apple_y == head_y) {
+            eatcount = 10;
+            while (snake[apple_y][apple_x]) {
+                apple_x = 2 + (rand() % (cols - 4));
+                apple_y = 2 + (rand() % (rows - 4));
+            }
+        }
+
+        if (eatcount)
+            eatcount--;
+
+        while (snake[apple_y][apple_x]) {
+            apple_x = 2 + (rand() % (cols - 4));
+            apple_y = 2 + (rand() % (rows - 4));
+        }
+
         switch (dir) {
             case 1: snake[head_y - 1][head_x] = 'H'; break;
             case 2: snake[head_y + 1][head_x] = 'H'; break;
@@ -149,34 +166,38 @@ void play(int rows, int cols) {
             case 4: snake[head_y][head_x - 1] = 'H'; break;
         }
 
-        for (int i = 0; i < rows && alive; i++) {
-            for (int j = 0; j < cols && alive; j++) {
-                if (snake[i][j] > 'Q' && tail) {
-                    tail_dir = snake[i][j];
-                    snake[i][j] = 0;
-                    board[i][j] = ' ';
-                    switch (tail_dir) {
-                        case 'R': snake[i - 1][j] += 'Q'; break;
-                        case 'S': snake[i + 1][j] += 'Q'; break;
-                        case 'T': snake[i][j + 1] += 'Q'; break;
-                        case 'U': snake[i][j - 1] += 'Q'; break;
-                    }
-                    tail = 0;
-                }
-                else if (snake[i][j] == 'H') {
-                    head_y = i;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (snake[i][j] == 'H') {
                     head_x = j;
+                    head_y = i;
                     if (i == 0 || j == 0 || i == rows - 1 || j == cols - 1 || board[i][j] == 'O') {
                         game_over(rows, cols);
-                        alive = 0;
                     }
                     board[i][j] = 'Q';
-                    tail = 1;
                 }
-                else if (snake[i][j])
-                    board[i][j] = 'O';
-                else
+                else if (snake[i][j] > 'Q' && !eatcount) {
+                    tail_dir = snake[i][j];
+                    tail_x = j;
+                    tail_y = i;
+                    snake[i][j] = 0;
                     board[i][j] = ' ';
+                }
+                else if (snake[i][j]) {
+                    board[i][j] = 'O';
+                }
+                else {
+                    board[i][j] = ' ';
+                }
+            }
+        }
+        
+        if (!eatcount) {
+            switch (tail_dir) {
+                case 'R': snake[tail_y - 1][tail_x] += 'Q'; break;
+                case 'S': snake[tail_y + 1][tail_x] += 'Q'; break;
+                case 'T': snake[tail_y][tail_x + 1] += 'Q'; break;
+                case 'U': snake[tail_y][tail_x - 1] += 'Q'; break;
             }
         }
 
@@ -189,13 +210,18 @@ void play(int rows, int cols) {
             board[i][cols] = 0;
         }
 
+        board[apple_y][apple_x] = '@';
+
         for (int i = 0; i < rows; i++) {
             escseq_len = sprintf(escseq, "\x1b[%d;1H", i + 1);
             write(STDOUT_FILENO, escseq, escseq_len);
             printf("%s", board[i]);
         }
 
-        usleep(50000);
+        if (dir <= 2)
+            usleep(40000);
+        else
+            usleep(25000);
     }
 }
 
@@ -257,7 +283,6 @@ void init_game(int rows, int cols) {
         read(STDIN_FILENO, &c, 1);
 
     if (c == ' ') {
-        //clear_screen();
         play(rows, cols);
     }
     else {
