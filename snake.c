@@ -6,8 +6,6 @@
 #include <string.h>
 
 #define VERSION "0.1"
-#define MAXOPTIONS 4
-
 
 struct termios saved_attributes;
 
