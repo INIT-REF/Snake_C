@@ -123,6 +123,7 @@ void play(int rows, int cols) {
     char dir = 4;
     int alive = 1;
     char tail_dir = 'U';
+    int tail = 1;
 
     memset(snake, 0, sizeof(snake));
     memset(board, ' ', sizeof(board));
@@ -150,7 +151,7 @@ void play(int rows, int cols) {
 
         for (int i = 0; i < rows && alive; i++) {
             for (int j = 0; j < cols && alive; j++) {
-                if (snake[i][j] > 'Q') {
+                if (snake[i][j] > 'Q' && tail) {
                     tail_dir = snake[i][j];
                     snake[i][j] = 0;
                     board[i][j] = ' ';
@@ -160,7 +161,7 @@ void play(int rows, int cols) {
                         case 'T': snake[i][j + 1] += 'Q'; break;
                         case 'U': snake[i][j - 1] += 'Q'; break;
                     }
-                    continue;
+                    tail = 0;
                 }
                 else if (snake[i][j] == 'H') {
                     head_y = i;
@@ -170,6 +171,7 @@ void play(int rows, int cols) {
                         alive = 0;
                     }
                     board[i][j] = 'Q';
+                    tail = 1;
                 }
                 else if (snake[i][j])
                     board[i][j] = 'O';
